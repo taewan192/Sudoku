@@ -30,6 +30,7 @@ Mobile portrait Sudoku game project built with Unity.
 - Game rules screen
 - Custom app icon
 - Android AAB build helper
+- Android launch orientation locked to portrait
 
 ## How To Open
 
@@ -48,9 +49,10 @@ The Android build helper is located at:
 The generated Android App Bundle uses:
 
 - Application ID: `com.arcana.sudoku`
-- Version name: `1.0`
-- Version code: `1`
+- Version name: `1.0.1`
+- Version code: `2`
 - App icon: `Assets/Icons/sudoku_icon_512.png`
+- Launch orientation: portrait
 
 ## Notes
 
