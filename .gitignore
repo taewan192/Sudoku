@@ -1,0 +1,45 @@
+# Unity generated files
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.csproj
+*.sln
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity cache and crash files
+sysinfo.txt
+*.stackdump
+
+# Android build outputs
+*.apk
+*.aab
+*.apks
+
+# Signing credentials - never commit these
+*.keystore
+*.jks
+*.p12
+*.pem
+*keystore*
+*credentials*
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
