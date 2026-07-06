@@ -2596,11 +2596,7 @@ public sealed class SudokuUIScreen : MonoBehaviour
 
     private void ConfigureMobileRuntime()
     {
-        Screen.orientation = ScreenOrientation.Portrait;
-        Screen.autorotateToPortrait = true;
-        Screen.autorotateToPortraitUpsideDown = false;
-        Screen.autorotateToLandscapeLeft = false;
-        Screen.autorotateToLandscapeRight = false;
+        SudokuStartupOrientationLock.LockPortraitNow();
         Application.targetFrameRate = 60;
     }
 

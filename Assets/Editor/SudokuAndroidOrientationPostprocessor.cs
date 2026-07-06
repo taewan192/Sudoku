@@ -12,6 +12,7 @@ public sealed class SudokuAndroidOrientationPostprocessor : IPostGenerateGradleA
         string manifestPath = Path.Combine(path, "src/main/AndroidManifest.xml");
         string customActivityName = "com.arcana.sudoku.SudokuPortraitGameActivity";
         WritePortraitActivity(path);
+        PatchLaunchStyles(path);
 
         if (!File.Exists(manifestPath))
         {
@@ -23,7 +24,8 @@ public sealed class SudokuAndroidOrientationPostprocessor : IPostGenerateGradleA
         string patched = manifest
             .Replace("android:name=\"com.unity3d.player.UnityPlayerGameActivity\"", "android:name=\"" + customActivityName + "\"")
             .Replace("android:screenOrientation=\"reversePortrait\"", "android:screenOrientation=\"portrait\"")
-            .Replace("android:resizeableActivity=\"true\"", "android:resizeableActivity=\"false\"");
+            .Replace("android:resizeableActivity=\"true\"", "android:resizeableActivity=\"false\"")
+            .Replace("android:theme=\"@style/BaseUnityGameActivityTheme\"", "android:theme=\"@style/SudokuLaunchTheme\"");
 
         if (patched != manifest)
         {
@@ -65,6 +67,39 @@ public class SudokuPortraitGameActivity extends UnityPlayerGameActivity {
     }
 }
 ");
+    }
+
+    private static void PatchLaunchStyles(string projectPath)
+    {
+        PatchStyleFile(Path.Combine(projectPath, "src/main/res/values/styles.xml"));
+        PatchStyleFile(Path.Combine(projectPath, "src/main/res/values-v31/styles.xml"));
+    }
+
+    private static void PatchStyleFile(string stylePath)
+    {
+        if (!File.Exists(stylePath))
+        {
+            return;
+        }
+
+        string styles = File.ReadAllText(stylePath);
+        if (styles.Contains("name=\"SudokuLaunchTheme\""))
+        {
+            return;
+        }
+
+        string launchStyle =
+@"  <style name=""SudokuLaunchTheme"" parent=""@style/BaseUnityGameActivityTheme"">
+    <item name=""android:windowDisablePreview"">true</item>
+    <item name=""android:windowNoTitle"">true</item>
+    <item name=""android:windowFullscreen"">true</item>
+    <item name=""android:windowActionBar"">false</item>
+    <item name=""android:windowBackground"">@android:color/black</item>
+  </style>
+";
+
+        styles = styles.Replace("</resources>", launchStyle + "</resources>");
+        File.WriteAllText(stylePath, styles);
     }
 }
 #endif
