@@ -49,8 +49,8 @@ The Android build helper is located at:
 The generated Android App Bundle uses:
 
 - Application ID: `com.arcana.sudoku`
-- Version name: `1.0.4`
-- Version code: `5`
+- Version name: `1.0.5`
+- Version code: `6`
 - App icon: `Assets/Icons/sudoku_icon_512.png`
 - Launch orientation: portrait
 

@@ -1530,6 +1530,7 @@ public sealed class SudokuUIScreen : MonoBehaviour
 
         if (resultIsGameOver)
         {
+            puzzleRunSeed = CreatePuzzleRunSeed(currentDifficulty);
             StartStage(currentDifficulty, currentStageIndex, true);
             ShowScreen(AppScreen.Game);
             return;
