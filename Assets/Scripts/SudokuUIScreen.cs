@@ -46,7 +46,8 @@ public sealed class SudokuUIScreen : MonoBehaviour
         Russian,
         Hindi,
         Korean,
-        French
+        French,
+        Japanese
     }
 
     private enum ThemeRole
@@ -912,6 +913,7 @@ public sealed class SudokuUIScreen : MonoBehaviour
         CreateLanguageChoiceButton(panel, GameLanguage.Hindi, 440f);
         CreateLanguageChoiceButton(panel, GameLanguage.Korean, 528f);
         CreateLanguageChoiceButton(panel, GameLanguage.French, 616f);
+        CreateLanguageChoiceButton(panel, GameLanguage.Japanese, 704f);
 
         languageOverlay.gameObject.SetActive(false);
     }
@@ -1835,6 +1837,8 @@ public sealed class SudokuUIScreen : MonoBehaviour
                 return "Korean";
             case GameLanguage.French:
                 return "French";
+            case GameLanguage.Japanese:
+                return "Japanese";
             default:
                 return "English";
         }
@@ -1858,6 +1862,11 @@ public sealed class SudokuUIScreen : MonoBehaviour
 
     private string T(string key)
     {
+        if (currentLanguage == GameLanguage.Japanese)
+        {
+            return JapaneseText(key);
+        }
+
         switch (key)
         {
             case "appTitle":
@@ -1960,6 +1969,104 @@ public sealed class SudokuUIScreen : MonoBehaviour
             default:
                 return english;
         }
+    }
+
+    private string JapaneseText(string key)
+    {
+        switch (key)
+        {
+            case "appTitle":
+                return "数独";
+            case "mainBadge":
+                return "モバイルパズル";
+            case "mainSubtitle":
+                return "きれいな盤面。短いラウンド。レベルを選択。";
+            case "start":
+                return "スタート";
+            case "startHint":
+                return "次に難易度を選択";
+            case "settings":
+                return "設定";
+            case "gameRules":
+                return "ゲームルール";
+            case "selectLevel":
+                return "レベル選択";
+            case "back":
+                return "戻る";
+            case "topSubtitle":
+                return "落ち着いて集中";
+            case "easy":
+                return "簡単";
+            case "normal":
+                return "普通";
+            case "hard":
+                return "難しい";
+            case "hint":
+                return "ヒント";
+            case "clues":
+                return "ヒント";
+            case "stages":
+                return "ステージ";
+            case "mistakes":
+                return "ミス";
+            case "undo":
+                return "戻す";
+            case "erase":
+                return "消す";
+            case "notes":
+                return "メモ";
+            case "settingsSubtitle":
+                return "画面モードを選択";
+            case "whiteMode":
+                return "ライトモード";
+            case "darkMode":
+                return "ダークモード";
+            case "settingsFooter":
+                return "選択したモードは自動的に保存されます。";
+            case "language":
+                return "言語";
+            case "languageSubtitle":
+                return "ゲーム内の言語を選択";
+            case "selected":
+                return "選択中";
+            case "close":
+                return "閉じる";
+            case "roundClear":
+                return "ラウンドクリア";
+            case "gameOver":
+                return "ゲームオーバー";
+            case "stage":
+                return "ステージ";
+            case "completed":
+                return "クリア";
+            case "mistakesFull":
+                return "ミス回数が上限に達しました";
+            case "mainScreen":
+                return "メイン画面";
+            case "nextRound":
+                return "次のラウンド";
+            case "retry":
+                return "もう一度";
+            case "on":
+                return "ON";
+            case "off":
+                return "OFF";
+            case "rulesBody":
+                return JapaneseRulesBody();
+            default:
+                return key;
+        }
+    }
+
+    private string JapaneseRulesBody()
+    {
+        return "数独は、通常9×9のグリッドで遊ぶ数字パズルです。\n\n"
+            + "空いているマスを埋めて、次のすべてのルールを満たすことが目的です。\n\n"
+            + "1. 各行には1から9までの数字をそれぞれ1回ずつ入れます。\n"
+            + "2. 各列にも1から9までの数字をそれぞれ1回ずつ入れます。\n"
+            + "3. 各3×3のブロックにも1から9までの数字をそれぞれ1回ずつ入れます。\n"
+            + "4. 最初から入っている数字は変更できません。\n\n"
+            + "例えば、ある行にすでに5がある場合、その行の別のマスにもう1つ5を入れることはできません。同じように、同じ列や同じ3×3ブロックにも重複した数字は入れられません。";
     }
 
     private string GetRulesBody()

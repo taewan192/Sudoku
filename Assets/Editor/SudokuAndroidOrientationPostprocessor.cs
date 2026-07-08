@@ -1,4 +1,4 @@
-#if UNITY_EDITOR && UNITY_ANDROID
+#if UNITY_EDITOR
 using System.IO;
 using UnityEditor.Android;
 using UnityEngine;
@@ -8,6 +8,20 @@ public sealed class SudokuAndroidOrientationPostprocessor : IPostGenerateGradleA
     public int callbackOrder => 100;
 
     public void OnPostGenerateGradleAndroidProject(string path)
+    {
+        PatchGradleProject(path);
+
+        DirectoryInfo parent = Directory.GetParent(path);
+        if (parent == null)
+        {
+            return;
+        }
+
+        PatchGradleProject(Path.Combine(parent.FullName, "unityLibrary"));
+        PatchGradleProject(Path.Combine(parent.FullName, "launcher"));
+    }
+
+    private static void PatchGradleProject(string path)
     {
         string manifestPath = Path.Combine(path, "src/main/AndroidManifest.xml");
         string customActivityName = "com.arcana.sudoku.SudokuPortraitGameActivity";
@@ -60,9 +74,23 @@ public class SudokuPortraitGameActivity extends UnityPlayerGameActivity {
     }
 
     @Override
+    protected void onStart() {
+        lockPortrait();
+        super.onStart();
+        lockPortrait();
+    }
+
+    @Override
     protected void onResume() {
         lockPortrait();
         super.onResume();
+        lockPortrait();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        lockPortrait();
+        super.onWindowFocusChanged(hasFocus);
         lockPortrait();
     }
 }
