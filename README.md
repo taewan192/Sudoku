@@ -50,7 +50,7 @@ The generated Android App Bundle uses:
 
 - Application ID: `com.arcana.sudoku`
 - Version name: `1.0.6`
-- Version code: `7`
+- Version code: `8`
 - App icon: `Assets/Icons/sudoku_icon_512.png`
 - Launch orientation: portrait
 
