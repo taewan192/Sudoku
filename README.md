@@ -54,6 +54,17 @@ The generated Android App Bundle uses:
 - App icon: `Assets/Icons/sudoku_icon_512.png`
 - Launch orientation: portrait
 
+## Store Listing Assets
+
+Google Play listing images are backed up in `StoreAssets`.
+
+- Feature graphic
+- Phone screenshots
+- Tablet screenshots
+- PC Google Play Games images
+- Chromebook screenshots
+- Android XR screenshots
+
 ## Notes
 
 Generated Unity folders such as `Library`, `Temp`, `Logs`, and Android signing files are intentionally excluded from GitHub.
