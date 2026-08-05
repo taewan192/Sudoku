@@ -84,9 +84,7 @@ public sealed class AdMobBannerController : MonoBehaviour
             EnsureEditorPreview();
             SyncEditorPreview();
         }
-        return;
-#endif
-
+#else
         if (!initialized && initializationComplete)
         {
             initialized = true;
@@ -101,6 +99,7 @@ public sealed class AdMobBannerController : MonoBehaviour
         {
             SyncBannerPosition();
         }
+#endif
     }
 
     private void OnDestroy()
