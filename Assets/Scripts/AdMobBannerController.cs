@@ -1,5 +1,8 @@
 using GoogleMobileAds.Api;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEngine.UI;
+#endif
 
 public sealed class AdMobBannerController : MonoBehaviour
 {
@@ -17,17 +20,33 @@ public sealed class AdMobBannerController : MonoBehaviour
     private bool shouldShow;
     private Vector2Int lastPosition = new Vector2Int(int.MinValue, int.MinValue);
     private Vector2Int lastScreenSize = new Vector2Int(int.MinValue, int.MinValue);
+#if UNITY_EDITOR
+    private RectTransform editorPreviewRect;
+#endif
 
     public void Configure(RectTransform adSlot)
     {
         slotRect = adSlot;
+#if UNITY_EDITOR
+        EnsureEditorPreview();
+        SyncEditorPreview();
+#else
         SyncBannerPosition();
+#endif
     }
 
     public void SetVisible(bool visible)
     {
         shouldShow = visible;
 
+#if UNITY_EDITOR
+        EnsureEditorPreview();
+        if (editorPreviewRect != null)
+        {
+            editorPreviewRect.gameObject.SetActive(visible);
+        }
+        return;
+#else
         if (!initialized)
         {
             return;
@@ -42,18 +61,32 @@ public sealed class AdMobBannerController : MonoBehaviour
         }
 
         bannerView?.Hide();
+#endif
     }
 
     private void Awake()
     {
+#if UNITY_EDITOR
+        initializationComplete = true;
+#else
         MobileAds.Initialize(delegate
         {
             initializationComplete = true;
         });
+#endif
     }
 
     private void LateUpdate()
     {
+#if UNITY_EDITOR
+        if (slotRect != null)
+        {
+            EnsureEditorPreview();
+            SyncEditorPreview();
+        }
+        return;
+#endif
+
         if (!initialized && initializationComplete)
         {
             initialized = true;
@@ -77,8 +110,17 @@ public sealed class AdMobBannerController : MonoBehaviour
             bannerView.Destroy();
             bannerView = null;
         }
+
+#if UNITY_EDITOR
+        if (editorPreviewRect != null)
+        {
+            Destroy(editorPreviewRect.gameObject);
+            editorPreviewRect = null;
+        }
+#endif
     }
 
+#if !UNITY_EDITOR
     private void EnsureBanner()
     {
         if (bannerView != null)
@@ -92,7 +134,9 @@ public sealed class AdMobBannerController : MonoBehaviour
         lastPosition = position;
         lastScreenSize = new Vector2Int(Screen.width, Screen.height);
     }
+#endif
 
+#if !UNITY_EDITOR
     private void SyncBannerPosition()
     {
         if (bannerView == null || slotRect == null)
@@ -112,7 +156,9 @@ public sealed class AdMobBannerController : MonoBehaviour
         lastPosition = position;
         lastScreenSize = screenSize;
     }
+#endif
 
+#if !UNITY_EDITOR
     private Vector2Int CalculateBannerPosition()
     {
         if (slotRect == null)
@@ -122,6 +168,8 @@ public sealed class AdMobBannerController : MonoBehaviour
 
         Vector3[] corners = new Vector3[4];
         slotRect.GetWorldCorners(corners);
+        Canvas canvas = slotRect.GetComponentInParent<Canvas>();
+        Camera canvasCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
 
         float minX = float.MaxValue;
         float maxX = float.MinValue;
@@ -130,7 +178,7 @@ public sealed class AdMobBannerController : MonoBehaviour
 
         for (int i = 0; i < corners.Length; i++)
         {
-            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(null, corners[i]);
+            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(canvasCamera, corners[i]);
             minX = Mathf.Min(minX, screenPoint.x);
             maxX = Mathf.Max(maxX, screenPoint.x);
             minY = Mathf.Min(minY, screenPoint.y);
@@ -146,6 +194,65 @@ public sealed class AdMobBannerController : MonoBehaviour
         y = Mathf.Clamp(y, 0, Mathf.Max(0, Screen.height - StandardBannerHeight));
         return new Vector2Int(x, y);
     }
+#endif
+
+#if UNITY_EDITOR
+    private void EnsureEditorPreview()
+    {
+        if (editorPreviewRect != null || slotRect == null)
+        {
+            return;
+        }
+
+        GameObject preview = new GameObject("AdMob Editor Preview", typeof(RectTransform));
+        editorPreviewRect = preview.GetComponent<RectTransform>();
+        editorPreviewRect.SetParent(slotRect, false);
+        editorPreviewRect.anchorMin = new Vector2(0.5f, 0.5f);
+        editorPreviewRect.anchorMax = new Vector2(0.5f, 0.5f);
+        editorPreviewRect.pivot = new Vector2(0.5f, 0.5f);
+
+        Image background = preview.AddComponent<Image>();
+        background.color = new Color(0.96f, 0.98f, 1f, 1f);
+        background.raycastTarget = false;
+
+        GameObject labelObject = new GameObject("Label", typeof(RectTransform));
+        RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+        labelRect.SetParent(editorPreviewRect, false);
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(16f, 4f);
+        labelRect.offsetMax = new Vector2(-16f, -4f);
+
+        Text label = labelObject.AddComponent<Text>();
+        label.text = "AdMob Test Banner";
+        label.alignment = TextAnchor.MiddleCenter;
+        label.color = new Color(0.12f, 0.17f, 0.22f, 1f);
+        label.fontSize = 18;
+        label.resizeTextForBestFit = true;
+        label.resizeTextMinSize = 10;
+        label.resizeTextMaxSize = 18;
+        label.raycastTarget = false;
+        label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+        preview.SetActive(shouldShow);
+    }
+
+    private void SyncEditorPreview()
+    {
+        if (editorPreviewRect == null || slotRect == null)
+        {
+            return;
+        }
+
+        Canvas canvas = slotRect.GetComponentInParent<Canvas>();
+        float scaleFactor = canvas != null ? Mathf.Max(0.01f, canvas.scaleFactor) : 1f;
+        float width = Mathf.Min(Mathf.Max(0f, slotRect.rect.width - 28f), StandardBannerWidth / scaleFactor);
+        float height = Mathf.Min(Mathf.Max(0f, slotRect.rect.height - 16f), StandardBannerHeight / scaleFactor);
+
+        editorPreviewRect.anchoredPosition = Vector2.zero;
+        editorPreviewRect.sizeDelta = new Vector2(width, height);
+    }
+#endif
 
     private string GetBannerAdUnitId()
     {
