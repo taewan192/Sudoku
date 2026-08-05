@@ -9,30 +9,42 @@ public sealed class SudokuAndroidOrientationPostprocessor : IPostGenerateGradleA
 
     public void OnPostGenerateGradleAndroidProject(string path)
     {
-        PatchGradleProject(path);
+        PatchUnityLibraryProject(path);
+    }
 
-        DirectoryInfo parent = Directory.GetParent(path);
-        if (parent == null)
+    private static void PatchUnityLibraryProject(string path)
+    {
+        if (PatchGradleProject(path))
         {
             return;
         }
 
-        PatchGradleProject(Path.Combine(parent.FullName, "unityLibrary"));
-        PatchGradleProject(Path.Combine(parent.FullName, "launcher"));
+        string nestedUnityLibrary = Path.Combine(path, "unityLibrary");
+        if (PatchGradleProject(nestedUnityLibrary))
+        {
+            return;
+        }
+
+        DirectoryInfo parent = Directory.GetParent(path);
+        if (parent != null)
+        {
+            PatchGradleProject(Path.Combine(parent.FullName, "unityLibrary"));
+        }
     }
 
-    private static void PatchGradleProject(string path)
+    private static bool PatchGradleProject(string path)
     {
         string manifestPath = Path.Combine(path, "src/main/AndroidManifest.xml");
         string customActivityName = "com.arcana.sudoku.SudokuPortraitGameActivity";
-        WritePortraitActivity(path);
-        PatchLaunchStyles(path);
 
         if (!File.Exists(manifestPath))
         {
             Debug.LogWarning("Sudoku Android manifest was not found for orientation patch: " + manifestPath);
-            return;
+            return false;
         }
+
+        WritePortraitActivity(path);
+        PatchLaunchStyles(path);
 
         string manifest = File.ReadAllText(manifestPath);
         string patched = manifest
@@ -46,6 +58,8 @@ public sealed class SudokuAndroidOrientationPostprocessor : IPostGenerateGradleA
             File.WriteAllText(manifestPath, patched);
             Debug.Log("Sudoku Android manifest orientation patched to portrait.");
         }
+
+        return true;
     }
 
     private static void WritePortraitActivity(string projectPath)
