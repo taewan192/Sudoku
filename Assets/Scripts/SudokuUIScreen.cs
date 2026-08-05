@@ -206,6 +206,7 @@ public sealed class SudokuUIScreen : MonoBehaviour
     private RectTransform gameScreenRoot;
     private RectTransform topBarRect;
     private RectTransform gameCardRect;
+    private RectTransform adSlotRect;
     private RectTransform statusRowRect;
     private RectTransform boardRect;
     private RectTransform controlsRect;
@@ -236,6 +237,7 @@ public sealed class SudokuUIScreen : MonoBehaviour
     private Vector2 lastLayoutSize = new Vector2(-1f, -1f);
     private AudioSource resultAudioSource;
     private AudioClip resultSound;
+    private AdMobBannerController adMobBanner;
 
     private AppScreen currentScreen = AppScreen.Main;
     private SudokuDifficulty currentDifficulty = SudokuDifficulty.Normal;
@@ -269,6 +271,7 @@ public sealed class SudokuUIScreen : MonoBehaviour
         EnsureEventSystem();
         SetupResultAudio();
         BuildInterface();
+        SetupAdMobBanner();
         LoadPuzzle(SudokuDifficulty.Normal, 0);
         ApplyTheme();
         ShowScreen(AppScreen.Main);
@@ -315,6 +318,7 @@ public sealed class SudokuUIScreen : MonoBehaviour
         BuildDifficultyScreen(difficultyScreenRoot);
         BuildTopBar(gameScreenRoot);
         BuildGameCard(gameScreenRoot);
+        BuildAdSlot(gameScreenRoot);
         BuildControlCard(gameScreenRoot);
         BuildSettingsModal(phoneRoot);
         BuildRulesModal(phoneRoot);
@@ -557,6 +561,12 @@ public sealed class SudokuUIScreen : MonoBehaviour
 
         BuildBoardCells(boardRect);
         BuildBoardLines(boardRect);
+    }
+
+    private void BuildAdSlot(RectTransform parent)
+    {
+        adSlotRect = CreateRect("AdMob Banner Slot", parent);
+        StretchTop(adSlotRect, 10f, 10f, 1388f, 148f);
     }
 
     private void BuildStatusRow(RectTransform parent)
@@ -1055,17 +1065,19 @@ public sealed class SudokuUIScreen : MonoBehaviour
         float topHeight = Mathf.Clamp(size.y * 0.074f, 118f, 146f);
         float controlsHeight = Mathf.Clamp(size.y * 0.245f, 390f, 470f);
         float statusHeight = Mathf.Clamp(size.y * 0.048f, 78f, 92f);
+        float adSlotHeight = Mathf.Clamp(size.y * 0.083f, 112f, 158f);
 
-        float availableBoardHeight = size.y - topHeight - controlsHeight - bottomMargin - (gap * 2f) - statusHeight - (inner * 3f);
+        float availableBoardHeight = size.y - topHeight - controlsHeight - adSlotHeight - bottomMargin - (gap * 3f) - statusHeight - (inner * 3f);
         if (availableBoardHeight < 430f)
         {
             topHeight = Mathf.Clamp(size.y * 0.066f, 96f, 126f);
             controlsHeight = Mathf.Clamp(size.y * 0.218f, 300f, 405f);
             statusHeight = Mathf.Clamp(size.y * 0.044f, 64f, 84f);
+            adSlotHeight = Mathf.Clamp(size.y * 0.075f, 86f, 132f);
             gap = 10f;
             inner = 9f;
             bottomMargin = 12f;
-            availableBoardHeight = size.y - topHeight - controlsHeight - bottomMargin - (gap * 2f) - statusHeight - (inner * 3f);
+            availableBoardHeight = size.y - topHeight - controlsHeight - adSlotHeight - bottomMargin - (gap * 3f) - statusHeight - (inner * 3f);
         }
 
         float maxBoardWidth = Mathf.Max(320f, size.x - (margin * 2f) - (inner * 1.5f));
@@ -1074,7 +1086,7 @@ public sealed class SudokuUIScreen : MonoBehaviour
 
         float gameTop = topHeight + gap;
         float gameHeight = statusHeight + boardSize + (inner * 3f);
-        float maxGameHeight = size.y - gameTop - controlsHeight - bottomMargin - gap;
+        float maxGameHeight = size.y - gameTop - controlsHeight - adSlotHeight - bottomMargin - (gap * 2f);
         if (gameHeight > maxGameHeight)
         {
             boardSize = Mathf.Max(300f, maxGameHeight - statusHeight - (inner * 3f));
@@ -1085,6 +1097,14 @@ public sealed class SudokuUIScreen : MonoBehaviour
         StretchTop(gameCardRect, margin, margin, gameTop, gameHeight);
         StretchTop(statusRowRect, inner, inner, inner * 0.8f, statusHeight);
         AnchorCenterTop(boardRect, 0f, statusHeight + (inner * 1.8f), boardSize, boardSize);
+
+        if (adSlotRect != null)
+        {
+            float adTop = gameTop + gameHeight + gap;
+            StretchTop(adSlotRect, margin, margin, adTop, adSlotHeight);
+            adMobBanner?.Configure(adSlotRect);
+        }
+
         StretchBottom(controlsRect, margin, margin, bottomMargin, controlsHeight);
 
         if (toolsRect != null)
@@ -1121,6 +1141,29 @@ public sealed class SudokuUIScreen : MonoBehaviour
         Stretch(phoneRoot);
         phoneRoot.pivot = new Vector2(0.5f, 0.5f);
         return safeSize;
+    }
+
+    private void SetupAdMobBanner()
+    {
+        if (adSlotRect == null)
+        {
+            return;
+        }
+
+        adMobBanner = gameObject.AddComponent<AdMobBannerController>();
+        adMobBanner.Configure(adSlotRect);
+        UpdateAdMobVisibility();
+    }
+
+    private void UpdateAdMobVisibility()
+    {
+        if (adMobBanner == null)
+        {
+            return;
+        }
+
+        adMobBanner.Configure(adSlotRect);
+        adMobBanner.SetVisible(currentScreen == AppScreen.Game);
     }
 
     private RectTransform CreateModeButton(RectTransform parent, string label, float top, UnityEngine.Events.UnityAction onClick)
@@ -1256,6 +1299,8 @@ public sealed class SudokuUIScreen : MonoBehaviour
         {
             gameScreenRoot.gameObject.SetActive(screen == AppScreen.Game);
         }
+
+        UpdateAdMobVisibility();
 
         if (screen != AppScreen.Game)
         {

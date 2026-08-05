@@ -43,3 +43,6 @@ sysinfo.txt
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local agent downloads
+.codex-downloads/
