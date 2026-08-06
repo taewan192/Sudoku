@@ -70,9 +70,9 @@ public static class SudokuAndroidBuild
 
         PlayerSettings.companyName = DefaultCompanyName;
         PlayerSettings.productName = DefaultProductName;
-        PlayerSettings.bundleVersion = "1.0.7";
+        PlayerSettings.bundleVersion = "1.0.8";
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, DefaultBundleId);
-        PlayerSettings.Android.bundleVersionCode = 9;
+        PlayerSettings.Android.bundleVersionCode = 10;
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
         PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
