@@ -26,20 +26,6 @@ public sealed class SudokuStartupOrientationLock : MonoBehaviour
         Screen.autorotateToLandscapeLeft = false;
         Screen.autorotateToLandscapeRight = false;
         Screen.orientation = ScreenOrientation.Portrait;
-
-#if UNITY_ANDROID && !UNITY_EDITOR
-        try
-        {
-            using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-            using (AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
-            {
-                activity?.Call("setRequestedOrientation", 1);
-            }
-        }
-        catch
-        {
-        }
-#endif
     }
 
     private static void EnsureHost()

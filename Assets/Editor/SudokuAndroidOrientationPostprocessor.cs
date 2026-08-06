@@ -5,6 +5,9 @@ using UnityEngine;
 
 public sealed class SudokuAndroidOrientationPostprocessor : IPostGenerateGradleAndroidProject
 {
+    private const string AdMobApplicationId = "ca-app-pub-3940256099942544~3347511713";
+    private const string AdMobApplicationIdMetadataName = "com.google.android.gms.ads.APPLICATION_ID";
+
     public int callbackOrder => 100;
 
     public void OnPostGenerateGradleAndroidProject(string path)
@@ -50,6 +53,8 @@ public sealed class SudokuAndroidOrientationPostprocessor : IPostGenerateGradleA
             .Replace("android:resizeableActivity=\"true\"", "android:resizeableActivity=\"false\"")
             .Replace("android:theme=\"@style/BaseUnityGameActivityTheme\"", "android:theme=\"@style/SudokuLaunchTheme\"");
 
+        patched = EnsureAdMobApplicationId(patched);
+
         if (patched != manifest)
         {
             File.WriteAllText(manifestPath, patched);
@@ -57,6 +62,32 @@ public sealed class SudokuAndroidOrientationPostprocessor : IPostGenerateGradleA
         }
 
         return true;
+    }
+
+    private static string EnsureAdMobApplicationId(string manifest)
+    {
+        if (manifest.Contains(AdMobApplicationIdMetadataName))
+        {
+            return manifest;
+        }
+
+        int applicationTagStart = manifest.IndexOf("<application", System.StringComparison.Ordinal);
+        if (applicationTagStart < 0)
+        {
+            Debug.LogWarning("Sudoku Android manifest has no application tag for AdMob App ID patch.");
+            return manifest;
+        }
+
+        int applicationTagEnd = manifest.IndexOf(">", applicationTagStart, System.StringComparison.Ordinal);
+        if (applicationTagEnd < 0)
+        {
+            Debug.LogWarning("Sudoku Android manifest application tag was not closed for AdMob App ID patch.");
+            return manifest;
+        }
+
+        string metadata =
+            "\n    <meta-data android:name=\"" + AdMobApplicationIdMetadataName + "\" android:value=\"" + AdMobApplicationId + "\" />";
+        return manifest.Insert(applicationTagEnd + 1, metadata);
     }
 
     private static void PatchLaunchStyles(string projectPath)
