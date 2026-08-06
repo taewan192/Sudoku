@@ -1,3 +1,4 @@
+using System;
 using GoogleMobileAds.Api;
 using UnityEngine;
 #if UNITY_EDITOR
@@ -16,6 +17,8 @@ public sealed class AdMobBannerController : MonoBehaviour
     private RectTransform slotRect;
     private BannerView bannerView;
     private volatile bool initializationComplete;
+    private bool initializationStarted;
+    private bool initializationFailed;
     private bool initialized;
     private bool shouldShow;
     private Vector2Int lastPosition = new Vector2Int(int.MinValue, int.MinValue);
@@ -47,6 +50,11 @@ public sealed class AdMobBannerController : MonoBehaviour
         }
         return;
 #else
+        if (shouldShow)
+        {
+            StartInitialization();
+        }
+
         if (!initialized)
         {
             return;
@@ -55,7 +63,7 @@ public sealed class AdMobBannerController : MonoBehaviour
         if (shouldShow)
         {
             EnsureBanner();
-            bannerView.Show();
+            bannerView?.Show();
             SyncBannerPosition();
             return;
         }
@@ -68,11 +76,6 @@ public sealed class AdMobBannerController : MonoBehaviour
     {
 #if UNITY_EDITOR
         initializationComplete = true;
-#else
-        MobileAds.Initialize(delegate
-        {
-            initializationComplete = true;
-        });
 #endif
     }
 
@@ -85,6 +88,11 @@ public sealed class AdMobBannerController : MonoBehaviour
             SyncEditorPreview();
         }
 #else
+        if (shouldShow)
+        {
+            StartInitialization();
+        }
+
         if (!initialized && initializationComplete)
         {
             initialized = true;
@@ -120,18 +128,49 @@ public sealed class AdMobBannerController : MonoBehaviour
     }
 
 #if !UNITY_EDITOR
-    private void EnsureBanner()
+    private void StartInitialization()
     {
-        if (bannerView != null)
+        if (initializationStarted || initializationFailed)
         {
             return;
         }
 
-        Vector2Int position = CalculateBannerPosition();
-        bannerView = new BannerView(GetBannerAdUnitId(), AdSize.Banner, position.x, position.y);
-        bannerView.LoadAd(new AdRequest());
-        lastPosition = position;
-        lastScreenSize = new Vector2Int(Screen.width, Screen.height);
+        initializationStarted = true;
+        try
+        {
+            MobileAds.Initialize(delegate
+            {
+                initializationComplete = true;
+            });
+        }
+        catch (Exception exception)
+        {
+            initializationFailed = true;
+            Debug.LogWarning("AdMob initialization failed. The game will continue without ads. " + exception.Message);
+        }
+    }
+
+    private void EnsureBanner()
+    {
+        if (bannerView != null || initializationFailed)
+        {
+            return;
+        }
+
+        try
+        {
+            Vector2Int position = CalculateBannerPosition();
+            bannerView = new BannerView(GetBannerAdUnitId(), AdSize.Banner, position.x, position.y);
+            bannerView.LoadAd(new AdRequest());
+            lastPosition = position;
+            lastScreenSize = new Vector2Int(Screen.width, Screen.height);
+        }
+        catch (Exception exception)
+        {
+            initializationFailed = true;
+            bannerView = null;
+            Debug.LogWarning("AdMob banner failed. The game will continue without ads. " + exception.Message);
+        }
     }
 #endif
 
