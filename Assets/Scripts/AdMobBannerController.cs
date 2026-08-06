@@ -10,6 +10,7 @@ public sealed class AdMobBannerController : MonoBehaviour
     private const string TestAndroidBannerAdUnitId = "ca-app-pub-3940256099942544/6300978111";
     private const int StandardBannerWidth = 320;
     private const int StandardBannerHeight = 50;
+    private const float BannerRetryDelaySeconds = 8f;
 
     [SerializeField] private bool useTestAds = true;
     [SerializeField] private string androidBannerAdUnitId = TestAndroidBannerAdUnitId;
@@ -21,6 +22,9 @@ public sealed class AdMobBannerController : MonoBehaviour
     private bool initializationFailed;
     private bool initialized;
     private bool shouldShow;
+    private bool bannerLoaded;
+    private bool bannerLoadRequested;
+    private float nextBannerLoadTime;
     private Vector2Int lastPosition = new Vector2Int(int.MinValue, int.MinValue);
     private Vector2Int lastScreenSize = new Vector2Int(int.MinValue, int.MinValue);
 #if UNITY_EDITOR
@@ -63,7 +67,10 @@ public sealed class AdMobBannerController : MonoBehaviour
         if (shouldShow)
         {
             EnsureBanner();
-            bannerView?.Show();
+            if (bannerLoaded)
+            {
+                bannerView?.Show();
+            }
             SyncBannerPosition();
             return;
         }
@@ -76,6 +83,8 @@ public sealed class AdMobBannerController : MonoBehaviour
     {
 #if UNITY_EDITOR
         initializationComplete = true;
+#else
+        StartInitialization();
 #endif
     }
 
@@ -99,12 +108,20 @@ public sealed class AdMobBannerController : MonoBehaviour
             if (shouldShow)
             {
                 EnsureBanner();
-                bannerView?.Show();
+                if (bannerLoaded)
+                {
+                    bannerView?.Show();
+                }
             }
         }
 
         if (shouldShow && initialized && bannerView != null)
         {
+            if (!bannerLoaded && !bannerLoadRequested && Time.unscaledTime >= nextBannerLoadTime)
+            {
+                RequestBannerLoad();
+            }
+
             SyncBannerPosition();
         }
 #endif
@@ -161,9 +178,11 @@ public sealed class AdMobBannerController : MonoBehaviour
         {
             Vector2Int position = CalculateBannerPosition();
             bannerView = new BannerView(GetBannerAdUnitId(), AdSize.Banner, position.x, position.y);
-            bannerView.LoadAd(new AdRequest());
+            bannerView.OnBannerAdLoaded += HandleBannerLoaded;
+            bannerView.OnBannerAdLoadFailed += HandleBannerLoadFailed;
             lastPosition = position;
             lastScreenSize = new Vector2Int(Screen.width, Screen.height);
+            RequestBannerLoad();
         }
         catch (Exception exception)
         {
@@ -171,6 +190,49 @@ public sealed class AdMobBannerController : MonoBehaviour
             bannerView = null;
             Debug.LogWarning("AdMob banner failed. The game will continue without ads. " + exception.Message);
         }
+    }
+
+    private void RequestBannerLoad()
+    {
+        if (bannerView == null || bannerLoadRequested)
+        {
+            return;
+        }
+
+        bannerLoadRequested = true;
+        try
+        {
+            bannerView.LoadAd(new AdRequest());
+        }
+        catch (Exception exception)
+        {
+            bannerLoadRequested = false;
+            nextBannerLoadTime = Time.unscaledTime + BannerRetryDelaySeconds;
+            Debug.LogWarning("AdMob banner load request failed. Retrying soon. " + exception.Message);
+        }
+    }
+
+    private void HandleBannerLoaded()
+    {
+        bannerLoaded = true;
+        bannerLoadRequested = false;
+        nextBannerLoadTime = 0f;
+        SyncBannerPosition();
+
+        if (shouldShow)
+        {
+            bannerView?.Show();
+        }
+
+        Debug.Log("AdMob banner loaded.");
+    }
+
+    private void HandleBannerLoadFailed(LoadAdError error)
+    {
+        bannerLoaded = false;
+        bannerLoadRequested = false;
+        nextBannerLoadTime = Time.unscaledTime + BannerRetryDelaySeconds;
+        Debug.LogWarning("AdMob banner load failed. Retrying soon. " + error);
     }
 #endif
 
