@@ -8,8 +8,6 @@ using UnityEngine.UI;
 public sealed class AdMobBannerController : MonoBehaviour
 {
     private const string TestAndroidBannerAdUnitId = "ca-app-pub-3940256099942544/6300978111";
-    private const int StandardBannerWidth = 320;
-    private const int StandardBannerHeight = 50;
     private const float BannerRetryDelaySeconds = 8f;
 
     [SerializeField] private bool useTestAds = true;
@@ -25,8 +23,6 @@ public sealed class AdMobBannerController : MonoBehaviour
     private bool bannerLoaded;
     private bool bannerLoadRequested;
     private float nextBannerLoadTime;
-    private Vector2Int lastPosition = new Vector2Int(int.MinValue, int.MinValue);
-    private Vector2Int lastScreenSize = new Vector2Int(int.MinValue, int.MinValue);
 #if UNITY_EDITOR
     private RectTransform editorPreviewRect;
 #endif
@@ -38,7 +34,6 @@ public sealed class AdMobBannerController : MonoBehaviour
         EnsureEditorPreview();
         SyncEditorPreview();
 #else
-        SyncBannerPosition();
 #endif
     }
 
@@ -71,7 +66,6 @@ public sealed class AdMobBannerController : MonoBehaviour
             {
                 bannerView?.Show();
             }
-            SyncBannerPosition();
             return;
         }
 
@@ -121,8 +115,6 @@ public sealed class AdMobBannerController : MonoBehaviour
             {
                 RequestBannerLoad();
             }
-
-            SyncBannerPosition();
         }
 #endif
     }
@@ -176,12 +168,9 @@ public sealed class AdMobBannerController : MonoBehaviour
 
         try
         {
-            Vector2Int position = CalculateBannerPosition();
-            bannerView = new BannerView(GetBannerAdUnitId(), AdSize.Banner, position.x, position.y);
+            bannerView = new BannerView(GetBannerAdUnitId(), AdSize.Banner, AdPosition.Bottom);
             bannerView.OnBannerAdLoaded += HandleBannerLoaded;
             bannerView.OnBannerAdLoadFailed += HandleBannerLoadFailed;
-            lastPosition = position;
-            lastScreenSize = new Vector2Int(Screen.width, Screen.height);
             RequestBannerLoad();
         }
         catch (Exception exception)
@@ -217,7 +206,7 @@ public sealed class AdMobBannerController : MonoBehaviour
         bannerLoaded = true;
         bannerLoadRequested = false;
         nextBannerLoadTime = 0f;
-        SyncBannerPosition();
+        bannerView?.SetPosition(AdPosition.Bottom);
 
         if (shouldShow)
         {
@@ -233,66 +222,6 @@ public sealed class AdMobBannerController : MonoBehaviour
         bannerLoadRequested = false;
         nextBannerLoadTime = Time.unscaledTime + BannerRetryDelaySeconds;
         Debug.LogWarning("AdMob banner load failed. Retrying soon. " + error);
-    }
-#endif
-
-#if !UNITY_EDITOR
-    private void SyncBannerPosition()
-    {
-        if (bannerView == null || slotRect == null)
-        {
-            return;
-        }
-
-        Vector2Int screenSize = new Vector2Int(Screen.width, Screen.height);
-        Vector2Int position = CalculateBannerPosition();
-
-        if (position == lastPosition && screenSize == lastScreenSize)
-        {
-            return;
-        }
-
-        bannerView.SetPosition(position.x, position.y);
-        lastPosition = position;
-        lastScreenSize = screenSize;
-    }
-#endif
-
-#if !UNITY_EDITOR
-    private Vector2Int CalculateBannerPosition()
-    {
-        if (slotRect == null)
-        {
-            return new Vector2Int(Mathf.Max(0, (Screen.width - StandardBannerWidth) / 2), 0);
-        }
-
-        Vector3[] corners = new Vector3[4];
-        slotRect.GetWorldCorners(corners);
-        Canvas canvas = slotRect.GetComponentInParent<Canvas>();
-        Camera canvasCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-
-        float minX = float.MaxValue;
-        float maxX = float.MinValue;
-        float minY = float.MaxValue;
-        float maxY = float.MinValue;
-
-        for (int i = 0; i < corners.Length; i++)
-        {
-            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(canvasCamera, corners[i]);
-            minX = Mathf.Min(minX, screenPoint.x);
-            maxX = Mathf.Max(maxX, screenPoint.x);
-            minY = Mathf.Min(minY, screenPoint.y);
-            maxY = Mathf.Max(maxY, screenPoint.y);
-        }
-
-        float slotWidth = Mathf.Max(0f, maxX - minX);
-        float slotHeight = Mathf.Max(0f, maxY - minY);
-        int x = Mathf.RoundToInt(minX + Mathf.Max(0f, slotWidth - StandardBannerWidth) * 0.5f);
-        int y = Mathf.RoundToInt(Screen.height - maxY + Mathf.Max(0f, slotHeight - StandardBannerHeight) * 0.5f);
-
-        x = Mathf.Clamp(x, 0, Mathf.Max(0, Screen.width - StandardBannerWidth));
-        y = Mathf.Clamp(y, 0, Mathf.Max(0, Screen.height - StandardBannerHeight));
-        return new Vector2Int(x, y);
     }
 #endif
 
@@ -346,8 +275,8 @@ public sealed class AdMobBannerController : MonoBehaviour
 
         Canvas canvas = slotRect.GetComponentInParent<Canvas>();
         float scaleFactor = canvas != null ? Mathf.Max(0.01f, canvas.scaleFactor) : 1f;
-        float width = Mathf.Min(Mathf.Max(0f, slotRect.rect.width - 28f), StandardBannerWidth / scaleFactor);
-        float height = Mathf.Min(Mathf.Max(0f, slotRect.rect.height - 16f), StandardBannerHeight / scaleFactor);
+        float width = Mathf.Min(Mathf.Max(0f, slotRect.rect.width - 28f), 320f / scaleFactor);
+        float height = Mathf.Min(Mathf.Max(0f, slotRect.rect.height - 16f), 50f / scaleFactor);
 
         editorPreviewRect.anchoredPosition = Vector2.zero;
         editorPreviewRect.sizeDelta = new Vector2(width, height);
