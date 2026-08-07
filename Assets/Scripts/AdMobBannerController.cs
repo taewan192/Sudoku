@@ -10,7 +10,7 @@ public sealed class AdMobBannerController : MonoBehaviour
     private const string TestAndroidBannerAdUnitId = "ca-app-pub-3940256099942544/6300978111";
     private const float BannerWidthDp = 320f;
     private const float BannerHeightDp = 50f;
-    private const float BannerVerticalOffsetDp = 24f;
+    private const float BannerVerticalOffsetDp = 36f;
     private const float BannerRetryDelaySeconds = 8f;
 
     [SerializeField] private bool useTestAds = true;
