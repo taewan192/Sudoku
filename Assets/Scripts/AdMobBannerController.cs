@@ -8,6 +8,8 @@ using UnityEngine.UI;
 public sealed class AdMobBannerController : MonoBehaviour
 {
     private const string TestAndroidBannerAdUnitId = "ca-app-pub-3940256099942544/6300978111";
+    private const float BannerWidthDp = 320f;
+    private const float BannerHeightDp = 50f;
     private const float BannerRetryDelaySeconds = 8f;
 
     [SerializeField] private bool useTestAds = true;
@@ -23,6 +25,8 @@ public sealed class AdMobBannerController : MonoBehaviour
     private bool bannerLoaded;
     private bool bannerLoadRequested;
     private float nextBannerLoadTime;
+    private Vector2Int lastPosition = new Vector2Int(int.MinValue, int.MinValue);
+    private Vector2Int lastScreenSize = new Vector2Int(int.MinValue, int.MinValue);
 #if UNITY_EDITOR
     private RectTransform editorPreviewRect;
 #endif
@@ -34,6 +38,7 @@ public sealed class AdMobBannerController : MonoBehaviour
         EnsureEditorPreview();
         SyncEditorPreview();
 #else
+        SyncBannerPosition();
 #endif
     }
 
@@ -66,6 +71,7 @@ public sealed class AdMobBannerController : MonoBehaviour
             {
                 bannerView?.Show();
             }
+            SyncBannerPosition();
             return;
         }
 
@@ -115,6 +121,8 @@ public sealed class AdMobBannerController : MonoBehaviour
             {
                 RequestBannerLoad();
             }
+
+            SyncBannerPosition();
         }
 #endif
     }
@@ -168,9 +176,12 @@ public sealed class AdMobBannerController : MonoBehaviour
 
         try
         {
-            bannerView = new BannerView(GetBannerAdUnitId(), AdSize.Banner, AdPosition.Bottom);
+            Vector2Int position = CalculateBannerPosition();
+            bannerView = new BannerView(GetBannerAdUnitId(), AdSize.Banner, position.x, position.y);
             bannerView.OnBannerAdLoaded += HandleBannerLoaded;
             bannerView.OnBannerAdLoadFailed += HandleBannerLoadFailed;
+            lastPosition = position;
+            lastScreenSize = new Vector2Int(Screen.width, Screen.height);
             RequestBannerLoad();
         }
         catch (Exception exception)
@@ -206,7 +217,7 @@ public sealed class AdMobBannerController : MonoBehaviour
         bannerLoaded = true;
         bannerLoadRequested = false;
         nextBannerLoadTime = 0f;
-        bannerView?.SetPosition(AdPosition.Bottom);
+        SyncBannerPosition(true);
 
         if (shouldShow)
         {
@@ -222,6 +233,92 @@ public sealed class AdMobBannerController : MonoBehaviour
         bannerLoadRequested = false;
         nextBannerLoadTime = Time.unscaledTime + BannerRetryDelaySeconds;
         Debug.LogWarning("AdMob banner load failed. Retrying soon. " + error);
+    }
+
+    private void SyncBannerPosition(bool force = false)
+    {
+        if (bannerView == null || slotRect == null)
+        {
+            return;
+        }
+
+        Vector2Int screenSize = new Vector2Int(Screen.width, Screen.height);
+        Vector2Int position = CalculateBannerPosition();
+
+        if (!force && position == lastPosition && screenSize == lastScreenSize)
+        {
+            return;
+        }
+
+        bannerView.SetPosition(position.x, position.y);
+        lastPosition = position;
+        lastScreenSize = screenSize;
+    }
+
+    private Vector2Int CalculateBannerPosition()
+    {
+        if (slotRect == null)
+        {
+            float fallbackDensity = GetAndroidDensity();
+            int fallbackX = Mathf.RoundToInt((Screen.width / fallbackDensity - BannerWidthDp) * 0.5f);
+            int fallbackY = Mathf.RoundToInt(Screen.height / fallbackDensity - BannerHeightDp);
+            return new Vector2Int(Mathf.Max(0, fallbackX), Mathf.Max(0, fallbackY));
+        }
+
+        Vector3[] corners = new Vector3[4];
+        slotRect.GetWorldCorners(corners);
+        Canvas canvas = slotRect.GetComponentInParent<Canvas>();
+        Camera canvasCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+
+        float minX = float.MaxValue;
+        float maxX = float.MinValue;
+        float minY = float.MaxValue;
+        float maxY = float.MinValue;
+
+        for (int i = 0; i < corners.Length; i++)
+        {
+            Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(canvasCamera, corners[i]);
+            minX = Mathf.Min(minX, screenPoint.x);
+            maxX = Mathf.Max(maxX, screenPoint.x);
+            minY = Mathf.Min(minY, screenPoint.y);
+            maxY = Mathf.Max(maxY, screenPoint.y);
+        }
+
+        float density = GetAndroidDensity();
+        float slotCenterX = (minX + maxX) * 0.5f;
+        float slotCenterFromTopY = Screen.height - ((minY + maxY) * 0.5f);
+        float screenWidthDp = Screen.width / density;
+        float screenHeightDp = Screen.height / density;
+
+        int x = Mathf.RoundToInt((slotCenterX / density) - (BannerWidthDp * 0.5f));
+        int y = Mathf.RoundToInt((slotCenterFromTopY / density) - (BannerHeightDp * 0.5f));
+
+        x = Mathf.Clamp(x, 0, Mathf.Max(0, Mathf.RoundToInt(screenWidthDp - BannerWidthDp)));
+        y = Mathf.Clamp(y, 0, Mathf.Max(0, Mathf.RoundToInt(screenHeightDp - BannerHeightDp)));
+        return new Vector2Int(x, y);
+    }
+
+    private float GetAndroidDensity()
+    {
+        try
+        {
+            using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            using (AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+            using (AndroidJavaObject resources = activity.Call<AndroidJavaObject>("getResources"))
+            using (AndroidJavaObject metrics = resources.Call<AndroidJavaObject>("getDisplayMetrics"))
+            {
+                return Mathf.Max(1f, metrics.Get<float>("density"));
+            }
+        }
+        catch
+        {
+            if (Screen.dpi > 0f)
+            {
+                return Mathf.Max(1f, Screen.dpi / 160f);
+            }
+
+            return 1f;
+        }
     }
 #endif
 
