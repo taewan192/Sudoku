@@ -10,6 +10,7 @@ public sealed class AdMobBannerController : MonoBehaviour
     private const string TestAndroidBannerAdUnitId = "ca-app-pub-3940256099942544/6300978111";
     private const float BannerWidthDp = 320f;
     private const float BannerHeightDp = 50f;
+    private const float BannerVerticalOffsetDp = 24f;
     private const float BannerRetryDelaySeconds = 8f;
 
     [SerializeField] private bool useTestAds = true;
@@ -291,7 +292,7 @@ public sealed class AdMobBannerController : MonoBehaviour
         float screenHeightDp = Screen.height / density;
 
         int x = Mathf.RoundToInt((slotCenterX / density) - (BannerWidthDp * 0.5f));
-        int y = Mathf.RoundToInt((slotCenterFromTopY / density) - (BannerHeightDp * 0.5f));
+        int y = Mathf.RoundToInt((slotCenterFromTopY / density) - (BannerHeightDp * 0.5f) + BannerVerticalOffsetDp);
 
         x = Mathf.Clamp(x, 0, Mathf.Max(0, Mathf.RoundToInt(screenWidthDp - BannerWidthDp)));
         y = Mathf.Clamp(y, 0, Mathf.Max(0, Mathf.RoundToInt(screenHeightDp - BannerHeightDp)));
