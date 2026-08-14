@@ -8,13 +8,14 @@ using UnityEngine.UI;
 public sealed class AdMobBannerController : MonoBehaviour
 {
     private const string TestAndroidBannerAdUnitId = "ca-app-pub-3940256099942544/6300978111";
+    private const string ProductionAndroidBannerAdUnitId = "ca-app-pub-9414919471923873/7754501934";
     private const float BannerWidthDp = 320f;
     private const float BannerHeightDp = 50f;
     private const float BannerVerticalOffsetDp = 36f;
     private const float BannerRetryDelaySeconds = 8f;
 
-    [SerializeField] private bool useTestAds = true;
-    [SerializeField] private string androidBannerAdUnitId = TestAndroidBannerAdUnitId;
+    [SerializeField] private bool useTestAds = false;
+    [SerializeField] private string androidBannerAdUnitId = ProductionAndroidBannerAdUnitId;
 
     private RectTransform slotRect;
     private BannerView bannerView;
@@ -351,7 +352,7 @@ public sealed class AdMobBannerController : MonoBehaviour
         labelRect.offsetMax = new Vector2(-16f, -4f);
 
         Text label = labelObject.AddComponent<Text>();
-        label.text = "AdMob Test Banner";
+        label.text = "AdMob Banner";
         label.alignment = TextAnchor.MiddleCenter;
         label.color = new Color(0.12f, 0.17f, 0.22f, 1f);
         label.fontSize = 18;
@@ -383,11 +384,11 @@ public sealed class AdMobBannerController : MonoBehaviour
 
     private string GetBannerAdUnitId()
     {
-        if (useTestAds || string.IsNullOrWhiteSpace(androidBannerAdUnitId))
+        if (useTestAds)
         {
             return TestAndroidBannerAdUnitId;
         }
 
-        return androidBannerAdUnitId;
+        return string.IsNullOrWhiteSpace(androidBannerAdUnitId) ? ProductionAndroidBannerAdUnitId : androidBannerAdUnitId;
     }
 }

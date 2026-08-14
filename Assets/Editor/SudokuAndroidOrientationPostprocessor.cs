@@ -5,7 +5,7 @@ using UnityEngine;
 
 public sealed class SudokuAndroidOrientationPostprocessor : IPostGenerateGradleAndroidProject
 {
-    private const string AdMobApplicationId = "ca-app-pub-3940256099942544~3347511713";
+    private const string AdMobApplicationId = "ca-app-pub-9414919471923873~1401630399";
     private const string AdMobApplicationIdMetadataName = "com.google.android.gms.ads.APPLICATION_ID";
 
     public int callbackOrder => 100;
